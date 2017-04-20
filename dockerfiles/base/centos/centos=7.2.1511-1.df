@@ -1,0 +1,25 @@
+FROM 172.30.33.88:5000/centos:7.2.1511
+MAINTAINER devops <devops@quarkfinance.com.com>
+
+ENV LANG en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
+ENV PATH /opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV Sailor quarkadmin
+ENV VolumeLogs /VolumeLogs
+ENV VolumeDump /VolumeDump
+ENV VolumeDrfs /VolumeDrfs
+
+VOLUME ${VolumeLogs} ${VolumeDump} ${VolumeDrfs}
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    groupadd -g 1000 ${Sailor} && \
+    useradd -u 1000 -g 1000 ${Sailor} && \
+    mkdir -p /opt/sbin /opt/bin && \
+    chown ${Sailor}:${Sailor} /opt -R && \
+    mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup && \
+    curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo && \
+    curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo && \
+    yum update -y && \
+    yum groupinstall "Development Tools" -y && \
+    yum install sudo which traceroute telnet yum-utils net-tools bind-utils -y && \
+    yum clean all

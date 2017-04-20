@@ -1,0 +1,35 @@
+#consul config files
+#json formatted
+{
+	"addresses": {
+		"http": "0.0.0.0"		#这是一个嵌套对象，配置consul agent的bind addresses，默认为client_addr
+		},
+	"bootstrap": true,		#指定该服务器是否已引导模式启动，注意：每个datacenter中只能有一台机器使用引导模式。尤其不推荐在一个集群已经被引导后再使用此模式。
+	"bind_addr": "0.0.0.0",		#内部集群通信地址，默认为0.0.0.0，Consul同时使用TCP和UDP的相同的端口，防火墙注意TCP和UDP都需要允许
+	"client_addr": "127.0.0.1"		#客户端绑定地址，包括HTTP、DNS和RPC服务，默认127.0.0.1
+	"datacenter": "dc1",		#指定datacenter name，默认为dc1
+	"data_dir": "/opt/consul-0.7.5/data",		#指定data目录，agent用来存储状态，此选项必须配置
+	"disable_remote_exec": false,		#设置为true时，禁用远程执行，Consul0.8之前默认为false，consul0.8默认为true
+	"encrypt": "",		#配置Consul网络传输时加密的secret key，可使用consul kengen命令生成，集群内所有节点必须使用相同的key，该key会被持久化到data目录中以便agent重启时自动加载，所以这个参数只需要在每个agent初始启动时提供一次。如果在agent已经被一个key初始化过后再提供一个新key，那么新key将被忽略并显示一个警告
+	"http_api_response_headers": {		#在HTTP API responses的header中添加相关信息，解决跨域问题？？
+		"Access-Control-Allow-Origin": "*"
+	},
+	"log_level": "info",		#日志级别，默认为info。包括trace，debug，info，warn，err
+	"node_id": "",		#Consul0.7.3后可用的配置，对于任意一个节点来说，这是已给唯一鉴定值，即使节点的name或者address被改变。值必须为16进制，36个字符长度，不指定时，agent初始化时会自动生成，并持久化到data目录
+	"node_name": "",	#节点名字，在集群内必须唯一，默认为机器的hostname
+	"ports": {			#该配置是一个嵌套对象，配置各服务绑定的端口
+		"dns": 8600,		#默认8600
+		"http": ,		#默认8500
+		"https": ,		#默认-1，即禁用
+		"rpc": ,		#默认8400，client_rpc
+		"serf_lan": ,	#默认8301
+		"serf_wan": ,	#默认8302
+		"server":		#默认8300，server_rpc
+	},
+	"retry_join"： ["", ""],	#一个address列表，加入失败时不会导致启动失败，并允许定时的重试加入一个集群，直到有一个连接为止。
+	"retry_interval": 30,		#重试间隔，默认30s
+	"server": true,		#该参数控制agent运行于server模式还是client模式，每个consul集群至少要有1个server，并且最好不超过5个datacenter。所有server使用raft一致性算法保证数据的一致性
+	"start_join": ["", ""],		#一个address列表，指定启动时加入集群的节点，所有节点都失败时会报错，并启动失败，退出consul
+	"ui": false,		#配置是否启用ui，默认false
+	"watchs": 
+}

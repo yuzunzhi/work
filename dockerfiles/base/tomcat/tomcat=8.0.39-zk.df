@@ -1,0 +1,30 @@
+FROM 172.30.33.88:5000/base/jdk:8u74
+ENV CATALINA_HOME /opt/tomcat
+ENV JPDA_ADDRESS 8000
+ENV PATH ${CATALINA_HOME}/bin:${PATH}
+ENV AppCode ${AppHome}/webapps
+
+ADD src/apache-tomcat-8.0.39.tar.gz /tmp
+ADD src/openssl-1.0.2h.tar.gz /tmp
+
+RUN yum install apr-devel -y && \
+    cd /tmp/openssl* && \
+    ./config --prefix=/opt/openssl -fPIC && make && make install && \
+    ln -sf /opt/openssl /usr/bin/openssl && \
+    tar -xf /tmp/apache-tomcat*/bin/tomcat-native.tar.gz -C /tmp && \
+    cd /tmp/tomcat-native-*-src/native/ && \
+    ./configure --prefix=/opt/apr --with-apr=/usr && make && make install && \
+    ln -sf /opt/apr/lib/libtcnative-1.so /usr/lib64 && \
+    mv /tmp/apache-tomcat* ${CATALINA_HOME} && \
+    chown ${Sailor}:${Sailor} ${CATALINA_HOME} -R && \
+    rm -rf /tmp/* ${CATALINA_HOME}/webapps/* ${CATALINA_HOME}/logs && yum clean all && \
+    ln -sf ${VolumeLogs} ${CATALINA_HOME}/logs && \
+    ln -sf ${VolumeDump} ${CATALINA_HOME}/dump && \
+    ln -sf ${VolumeDrfs} ${CATALINA_HOME}/drfs
+
+WORKDIR ${CATALINA_HOME}
+EXPOSE 8080
+
+COPY src/docker-entrypoint-zk.sh /entrypoint.sh
+CMD ["run"]
+ENTRYPOINT ["/entrypoint.sh"]

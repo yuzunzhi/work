@@ -1,0 +1,1 @@
+sh ./build.sh REGISTRY_HOST:REGISTRY_PORT

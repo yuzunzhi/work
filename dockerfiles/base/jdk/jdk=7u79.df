@@ -1,0 +1,7 @@
+FROM 172.30.33.88:5000/base/centos:7.2.1511-1-kazoo
+ENV JAVA_HOME /opt/jdk
+ENV PATH ${JAVA_HOME}/bin:${PATH}
+
+ADD src/jdk-7u79-linux-x64.tar.gz /tmp/
+
+RUN mv /tmp/jdk* ${JAVA_HOME} && chown ${Sailor}:${Sailor} ${JAVA_HOME} -R

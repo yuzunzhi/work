@@ -1,0 +1,99 @@
+BIND9.9.9-P8 with dlz
+
+https://www.isc.org/downloads/file/bind-9-9-9-p8/?version=tar-gz
+
+安装依赖包
+yum install -y gcc mysql-devel
+
+
+CentOS 7.2.1511
+64位系统编译，需要增加几个环境变量，不然编译时找不到库文件
+export CPPFLAGS="-I/usr/lib64/mysql $CPPFLAGS"
+export LDFLAGS="-L/usr/lib64/mysql $LDFLAGS"
+export LD_LIBRARY_PATH="/usr/lib64/mysql"
+或者ln -s /usr/lib/mysql /usr/lib64/mysql
+
+编译
+# ./configure --with-dlz-mysql=yes --enable-largefile --enable-threads=no --prefix=/opt/platform/bind --disable-openssl-version-check
+# make && make install
+
+生成配置文件
+../sbin/rndc-confgen > rndc.conf
+tail -n10 rndc.conf | head -n9 | sed -e s/#\//g >named.conf
+dig > named.root
+cat > localhost.zone <<EOF
+ttl 86400
+@ IN SOA localhost. root.localhost. (
+1997022700 ; Serial
+28800 ; Refresh
+14400 ; Retry
+3600000 ; Expire
+86400 ) ; Minimum
+IN NS localhost.
+1 IN PTR localhost.
+EOF
+
+编辑named.conf
+vim named.conf
+
+dlz "Mysql zone" {
+   database "mysql
+   {host=192.168.23.108 dbname=dns_data ssl=false port=3306 user=root pass=2wsxVFR$}
+   {select zone from dns_records where zone = '$zone$'}
+   {select ttl, type, mx_priority, case when lower(type)='txt' then concat('\"', data, '\"')
+        when lower(type) = 'soa' then concat_ws(' ', data, resp_person, serial, refresh, retry, expire, minimum)
+        else data end from dns_records where zone = '$zone$' and host = '$record$'}";
+};
+
+dlz "Mysql zone" { //定义DLZ标识 
+   database "mysql //database为dlz这个block唯一可指定的关键字，mysql表示使用mysql driver 
+   {host=localhost dbname=dns_data ssl=tRue} //连接数据库的信息 
+   {select zone from dns_records where zone = '$zone$'} //用于findzone调用，查询zone 
+   {select ttl, type, mx_priority, case when lower(type)='txt' then concat('\"', data, '\"') 
+        else data end from dns_records where zone = '$zone$' and host = '$record$' 
+        and not (type = 'SOA' or type = 'NS')} //用于lookup调用，查询record 
+   {select ttl, type, mx_priority, data, resp_person, serial, refresh, retry, expire, minimum 
+        from dns_records where zone = '$zone$' and (type = 'SOA' or type='NS')} //用于authority调用，查询SOA或者NS记录，注意这个配置是可选的，SOA和NS查询可以放到lookup调用里，具体见后文 
+   {select ttl, type, host, mx_priority, data, resp_person, serial, refresh, retry, expire, 
+        minimum from dns_records where zone = '$zone$' and not (type = 'SOA' or type = 'NS')} //用于allnode调用，和接下来的allowzonexfr一起来提供AXFR查询，可选的配置项 
+   {select zone from xfr_table where zone = '$zone$' and client = '$client$'} //用于allowzonexfr()调用，用于查询客户端是否可发起AXFR查询，可选的配置项 
+   {update data_count set count = count + 1 where zone ='$zone$'}"; 
+};
+
+建库建表
+CREATE DATABASE dns_data;
+USE dns_data;
+CREATE TABLE IF NOT EXISTS dns_records (
+  id int(10) unsigned NOT NULL AUTO_INCREMENT,
+  zone varchar(255) NOT NULL,
+  host varchar(255) NOT NULL,
+  type enum('A','MX','CNAME','NS','SOA','PTR','TXT','AAAA','SVR','URL') NOT NULL,
+  data varchar(255) NOT NULL,
+  ttl int(11) NOT NULL,
+  mx_priority int(11) DEFAULT NULL,
+  refresh int(11) DEFAULT NULL,
+  retry int(11) DEFAULT NULL,
+  expire int(11) DEFAULT NULL,
+  minimum int(11) DEFAULT NULL,
+  serial bigint(20) DEFAULT NULL,
+  resp_person varchar(64) DEFAULT NULL,
+  primary_ns varchar(64) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY type (type),
+  KEY host (host),
+  KEY zone (zone) 
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+
+
+DEBUG模式启动测试
+./named -uroot -g -d 1
+
+
+
+
+
+
+
+
+
+

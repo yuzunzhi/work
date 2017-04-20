@@ -1,0 +1,11 @@
+FROM 172.30.33.88:5000/base/jdk:7u60
+ENV BUILDSPACE /opt/buildspace
+ENV M2_HOME /opt/maven
+ENV PATH ${M2_HOME}/bin:${PATH}
+
+ADD src/apache-maven-3.3.3-bin.tar.gz /tmp/
+
+RUN mv /tmp/apache-maven* ${M2_HOME} && mkdir -p ${BUILDSPACE} && chown ${Sailor}:${Sailor} ${M2_HOME} ${BUILDSPACE} -R && ln -sf ${VolumeDump} ~/.m2
+
+WORKDIR ${BUILDSPACE}
+VOLUME ${BUILDSPACE}

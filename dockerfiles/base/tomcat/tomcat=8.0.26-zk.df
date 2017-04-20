@@ -1,0 +1,2 @@
+FROM 172.30.33.88:5000/base/tomcat:8.0.26-7u60
+COPY src/docker-entrypoint-zk.sh /entrypoint.sh

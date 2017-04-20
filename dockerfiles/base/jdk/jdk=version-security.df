@@ -1,0 +1,2 @@
+FROM 172.30.33.88:5000/base/jdk:8u74
+ADD src/security.tgz /opt/jdk/jre/lib/security
